@@ -32,8 +32,8 @@ conda activate faiss-env
 # Install faiss-cpu via conda
 conda install -c conda-forge faiss-cpu
 
-# Install other packages via pip
-pip install langchain openai tiktoken pinecone
+# Install ALL other packages via pip (one time only)
+pip install langchain langchain-community openai tiktoken pinecone
 ```
 
 ### 2. Environment Variables
@@ -111,6 +111,9 @@ Ask questions about your documents!
 # 1. Activate environment
 conda activate faiss-env
 
+# Install missing package if needed
+pip install langchain-community
+
 # 2. Add sample document
 echo "# Company Policies\nOur vacation policy allows 3 weeks PTO..." > data/policies.md
 
@@ -179,6 +182,15 @@ To use Pinecone, uncomment the relevant sections in `build_story.py` and `query.
 ## Troubleshooting
 
 ### Common Issues
+
+**LangChain import errors**:
+```bash
+# If you get "ModuleNotFoundError: Module langchain_community not found"
+pip install langchain-community
+
+# For document loader issues specifically:
+pip install -U langchain-community
+```
 
 **faiss-cpu build errors**:
 ```bash
