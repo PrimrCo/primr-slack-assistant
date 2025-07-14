@@ -1,0 +1,5 @@
+{
+  "embedding_model": "text-embedding-ada-002",
+  "chunk_count": 8,
+  "index_created": true
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "page_content": "# Benefits\n\nAt Primr, we value our team members and offer a comprehensive benefits package:\n\n- Competitive salary with annual reviews\n- Health, dental, and vision insurance\n- 401(k) plan with 4% company match\n- Flexible paid time off (PTO) policy\n- Remote-friendly and hybrid work options\n- Professional development stipend\n- Company retreats and team-building events",
+    "metadata": {
+      "source": "data/benefits.md"
+    }
+  },
+  {
+    "page_content": "# FAQs\n\n**Q: How do I get set up with Slack?**\nA: Check your email for the Slack invite link. If you haven't received it, contact it-support@primr.app.\n\n**Q: Where can I find the employee handbook?**\nA: The handbook is in Notion under the `Company Wiki` section: [Primr Company Handbook](https://notion.so/primr-handbook).\n\n**Q: Who do I contact for IT issues?**\nA: Reach out to it-support@primr.app or ping the #it-support Slack channel.\n\n**Q: What is the process for submitting expenses?**\nA: Use Concur to submit expenses. Refer to the Expense Policy in Notion for guidelines.\n\n**Q: How do I request time off?**\nA: Submit a PTO request through our HR portal in Notion and notify your manager.\n\n**Q: Where are meeting notes stored?**\nA: All meeting notes are saved in Notion under the `Meeting Archives` page.",
+    "metadata": {
+      "source": "data/faqs.md"
+    }
+  },
+  {
+    "page_content": "# Policies\n\n## Code of Conduct\nAll employees must adhere to our Code of Conduct, promoting respectful and inclusive interactions.\n\n## Remote Work\n- Primr supports remote-first work.\n- Core hours: 10 AM - 4 PM EST\n- Daily check-ins via Slack\n\n## Leave Policy\n- 15 days of paid time off annually\n- 10 days of sick leave\n- Parental leave: 12 weeks paid\n\n## Security Policy\n- Use company-managed devices for sensitive work\n- Enable MFA on all critical accounts\n- Report any security incidents to security@primr.app immediately\n\n## Expense Policy\n- Business expenses must be submitted within 30 days\n- Use Concur for expense reporting with receipts",
+    "metadata": {
+      "source": "data/policies.md"
+    }
+  },
+  {
+    "page_content": "# Software Engineer Onboarding\n\nWelcome to the engineering team! This guide covers everything you need to get started as a full-stack Node.js/React engineer at Primr.\n\n---\n\n## 1. Access & Accounts\n\n- **GitHub**  \n  - Check your email for the repo invitation.  \n  - You should have read/write access to `github.com/primr/app`.  \n- **Google Workspace**  \n  - Company email is `<yourname>@primr.app`.  \n  - Access Google Drive folders under “Engineering”.  \n- **Slack**  \n  - Join #engineering, #team, and #onboarding channels.  \n- **Jira**  \n  - Log in at `jira.primr.app` with SSO.  \n  - Find your name under the “Engineers” group.\n\n---\n\n## 2. Local Development Setup\n\n**Prerequisites**  \n- Node.js v14+  \n- npm or yarn  \n- MongoDB (local) or Docker (optional)",
+    "metadata": {
+      "source": "data/engineer_onboarding.md"
+    }
+  },
+  {
+    "page_content": "---\n\n## 2. Local Development Setup\n\n**Prerequisites**  \n- Node.js v14+  \n- npm or yarn  \n- MongoDB (local) or Docker (optional)\n\n**Steps**  \n1. Clone the repo:  \n   ```\n   git clone https://github.com/primr/app.git\n   cd app\n   ```  \n2. Install dependencies:  \n   ```\n   npm install\n   ```  \n3. Copy environment variables:  \n   ```\n   cp .env.example .env\n   ```  \n   - Populate `MONGODB_URI`, `SLACK_BOT_TOKEN`, and `NEXT_PUBLIC_API_URL`.  \n4. Start MongoDB:  \n   - **Local**: `mongod --dbpath ~/data/db`  \n   - **Docker**: `docker run -d -p 27017:27017 --name primr-mongo mongo:4.4`  \n5. Run the API server:  \n   ```\n   npm run dev:api\n   ```  \n6. Run the frontend:  \n   ```\n   npm run dev:web\n   ```  \n7. Verify: Navigate to `http://localhost:3000` in your browser.\n\n---\n\n## 3. Team Rituals & Calendar\n\nPlease accept these recurring invites on your calendar:",
+    "metadata": {
+      "source": "data/engineer_onboarding.md"
+    }
+  },
+  {
+    "page_content": "---\n\n## 3. Team Rituals & Calendar\n\nPlease accept these recurring invites on your calendar:\n\n- **Daily Standup**  \n  - When: Weekdays at 10:00 AM EST  \n  - Where: #standup channel  \n- **Sprint Planning**  \n  - When: Mondays at 2:00 PM EST  \n  - Where: Zoom link in invite  \n- **Design Review**  \n  - When: Wednesdays at 3:00 PM EST  \n  - Where: #design-review channel  \n- **Sprint Demo**  \n  - When: Fridays at 4:00 PM EST  \n  - Where: #demo channel  \n- **Onboarding 1:1**  \n  - When: Day 2 at 11:00 AM EST  \n  - With your manager (calendar invite sent separately)\n\n---\n\n## 4. Meet the Team\n\nWe’ve scheduled short intro sessions with each:\n\n- **Your Manager**: Jane Doe (Lead Engineer)  \n- **Frontend Lead**: John Smith  \n- **Backend Lead**: Alice Lee  \n- **QA Engineer**: Bob Kim  \n\n**Icebreaker:**  \nIn #introductions, share a fun fact and your favorite open-source project.\n\n---\n\n## 5. First Task: API Health Check\n\nYour first assignment helps you learn our codebase:",
+    "metadata": {
+      "source": "data/engineer_onboarding.md"
+    }
+  },
+  {
+    "page_content": "**Icebreaker:**  \nIn #introductions, share a fun fact and your favorite open-source project.\n\n---\n\n## 5. First Task: API Health Check\n\nYour first assignment helps you learn our codebase:\n\n1. **Read** `README.md` and `docs/api.md` under `docs/`.  \n2. **Implement** a new endpoint:  \n   - Route: `GET /api/status`  \n   - Response: `{ status: \"ok\", timestamp: <current ISO> }`  \n3. **Write Tests** in `tests/status.test.js`:  \n   ```js\n   import request from 'supertest';\n   import app from '../src/app';\n\n   test('GET /api/status returns ok', async () => {\n     const res = await request(app).get('/api/status');\n     expect(res.body.status).toBe('ok');\n     expect(res.body.timestamp).toBeDefined();\n   });\n   ```  \n4. **Run Tests**:  \n   ```\n   npm test\n   ```  \n5. **Create a Pull Request** against the `dev` branch and request review from your team leads.\n\n---\n\nWelcome aboard! Let us know if you hit any roadblocks or have questions.",
+    "metadata": {
+      "source": "data/engineer_onboarding.md"
+    }
+  },
+  {
+    "page_content": "# Tools\n\nPrimr leverages a modern tech stack to streamline workflows:\n\n- **Slack** for real-time team communication\n- **Notion** for documentation and knowledge management\n- **GitHub** for source code version control\n- **Jira** for issue tracking and project management\n- **Google Drive** for file storage and collaboration\n- **Zoom** for video conferencing\n- **Figma** for design collaboration",
+    "metadata": {
+      "source": "data/tools.md"
+    }
+  }
+]

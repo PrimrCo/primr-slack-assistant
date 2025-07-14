@@ -33,7 +33,7 @@ conda activate faiss-env
 conda install -c conda-forge faiss-cpu
 
 # Install ALL other packages via pip (one time only)
-pip install langchain langchain-community openai tiktoken pinecone
+pip install langchain langchain-community langchain-openai openai tiktoken pinecone
 ```
 
 ### 2. Environment Variables
@@ -83,7 +83,7 @@ Chunk your documents:
 python ingest.py
 ```
 
-This creates `chunks.pkl` with processed document chunks.
+This creates `chunks.json` with processed document chunks.
 
 ### Step 3: Build Vector Index
 
@@ -108,18 +108,15 @@ Ask questions about your documents!
 ## Complete Workflow Example
 
 ```bash
-# 1. Activate environment
+# 1. Activate environment (packages already installed)
 conda activate faiss-env
-
-# Install missing package if needed
-pip install langchain-community
 
 # 2. Add sample document
 echo "# Company Policies\nOur vacation policy allows 3 weeks PTO..." > data/policies.md
 
 # 3. Process documents
 python ingest.py
-# Output: 🔖 X chunks saved to chunks.pkl
+# Output: 🔖 X chunks saved to chunks.json
 
 # 4. Build vector index
 python build_story.py
@@ -137,7 +134,8 @@ python query.py
 primr-slack-assistant/
 ├── data/                    # Your .md documents
 ├── faiss_index/            # Generated vector database
-├── chunks.pkl              # Processed document chunks
+├── chunks.json             # Processed document chunks (JSON format)
+├── index_info.json         # Index metadata
 ├── ingest.py              # Document processing
 ├── build_story.py         # Vector index creation
 ├── query.py               # Interactive Q&A
@@ -150,12 +148,13 @@ primr-slack-assistant/
 1. **Document Processing** (`ingest.py`):
    - Loads `.md` files from `data/` folder
    - Splits into 1000-character chunks with 200-character overlap
-   - Saves chunks to `chunks.pkl`
+   - Saves chunks to `chunks.json` (secure JSON format)
 
 2. **Vector Index Creation** (`build_story.py`):
-   - Loads document chunks
+   - Loads document chunks from JSON
    - Creates embeddings using OpenAI's `text-embedding-ada-002`
    - Stores vectors in FAISS index for fast similarity search
+   - Saves metadata to `index_info.json`
 
 3. **Query Processing** (`query.py`):
    - Loads FAISS vector store
@@ -171,25 +170,44 @@ primr-slack-assistant/
 - ✅ Good for development and small datasets
 - ❌ No cloud sync or scaling
 
-### Pinecone (Cloud - Optional)
-- ✅ Cloud-hosted and scalable
-- ✅ Built for production
-- ❌ ~$70/month cost
-- ❌ Requires separate API setup
-
-To use Pinecone, uncomment the relevant sections in `build_story.py` and `query.py`.
 
 ## Troubleshooting
 
 ### Common Issues
 
-**LangChain import errors**:
+**OpenAI API v1.0+ compatibility errors**:
 ```bash
-# If you get "ModuleNotFoundError: Module langchain_community not found"
-pip install langchain-community
+# If you get "APIRemovedInV1" errors:
+# Make sure you're using ChatOpenAI for chat models:
+from langchain_community.chat_models import ChatOpenAI
 
-# For document loader issues specifically:
-pip install -U langchain-community
+# And use invoke() instead of run():
+result = qa.invoke({"query": query})
+print(result["result"])
+```
+
+**LangChain deprecation warnings**:
+```bash
+# If you see "Chain.run was deprecated" warnings:
+# Replace:
+qa.run(query)
+# With:
+result = qa.invoke({"query": query})
+print(result["result"])
+```
+
+**LangChain chat model warnings**:
+```bash
+# If you see warnings about "chat model" usage:
+# Update your imports from:
+from langchain_community.llms import OpenAI
+# To:
+from langchain_community.chat_models import ChatOpenAI
+
+# Then change:
+llm=OpenAI(model_name="gpt-4", temperature=0)
+# To:
+llm=ChatOpenAI(model_name="gpt-4", temperature=0)
 ```
 
 **faiss-cpu build errors**:
@@ -250,3 +268,27 @@ To connect this to Slack:
 2. Create your feature branch
 3. Make sure to test with `conda activate faiss-env`
 4. Submit a pull request
+
+## Known Issues / Technical Debt
+
+### Security: Pickle Dependency in FAISS
+- **Issue**: FAISS vector store uses pickle for metadata serialization
+- **Current mitigation**: We only load files we created ourselves
+- **Risk level**: Low (controlled environment)
+- **Future fix**: Migrate to pickle-free vector store (Chroma, Weaviate, or Pinecone)
+
+### Alternative Vector Stores to Consider
+- **Chroma**: Local SQLite-based, no pickle
+- **Weaviate**: Open source, REST API
+- **Pinecone**: Cloud-hosted, production-ready
+
+```
+# Future: query.py without pickle
+from langchain_community.vectorstores import Chroma
+
+vs = Chroma(
+    persist_directory="./chroma_db",
+    embedding_function=OpenAIEmbeddings(model="text-embedding-ada-002")
+)
+# No allow_dangerous_deserialization needed!
+```
