@@ -3,10 +3,11 @@ import subprocess
 from dotenv import load_dotenv
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
-from langchain_community.chat_models import ChatOpenAI
-from langchain.chains import RetrievalQA
-from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
+from vector_search import SimpleVectorStore
+from typing import List
 
 load_dotenv()
 
@@ -24,23 +25,48 @@ def get_qa_chain():
 
         try:
             # Check if vector index exists
-            if not os.path.exists("faiss_index"):
+            if not os.path.exists("vectors.json"):
                 raise FileNotFoundError("Vector index not found. Please add documents to data/ folder and restart the bot.")
 
-            # Load FAISS index
-            vs = FAISS.load_local(
-                "faiss_index",
-                OpenAIEmbeddings(model="text-embedding-ada-002"),
-                allow_dangerous_deserialization=True
-            )
+            # Load our custom vector store (no pickle)
+            vs = SimpleVectorStore("vectors.json")
 
-            retriever = vs.as_retriever(search_kwargs={"k": 5})
+            # Create simple QA function
+            def answer_question(query: str) -> str:
+                # Get relevant documents
+                results = vs.similarity_search(query, k=5)
 
-            qa_chain = RetrievalQA.from_chain_type(
-                llm=ChatOpenAI(model="gpt-4", temperature=0),
-                chain_type="stuff",
-                retriever=retriever,
-            )
+                if not results:
+                    return "I don't have information to answer that question."
+
+                # Format context from results
+                context = "\n\n".join([f"Document {i+1}:\n{text}" for i, (text, _, _) in enumerate(results)])
+
+                # Create prompt
+                prompt_template = """Use the following context to answer the question. If you cannot answer based on the context, say so.
+
+Context:
+{context}
+
+Question: {question}
+
+Answer:"""
+
+                prompt = PromptTemplate(
+                    template=prompt_template,
+                    input_variables=["context", "question"]
+                )
+
+                # Create LLM chain
+                llm = ChatOpenAI(model="gpt-4", temperature=0)
+                chain = LLMChain(llm=llm, prompt=prompt)
+
+                # Get answer
+                response = chain.run(context=context, question=query)
+                return response
+
+            # Store the QA function
+            qa_chain = answer_question
 
             print("✅ AI components loaded!")
 
@@ -70,8 +96,7 @@ def handle_message(message, say):
 
         # Get AI response
         qa = get_qa_chain()
-        result = qa.invoke({"query": user_query})
-        answer = result["result"]
+        answer = qa(user_query)
 
         # Send response
         say(f"💡 {answer}")
@@ -100,8 +125,7 @@ def handle_ask_command(ack, respond, command):
 
         # Get AI response
         qa = get_qa_chain()
-        result = qa.invoke({"query": user_query})
-        answer = result["result"]
+        answer = qa(user_query)
 
         # Send follow-up with the answer
         app.client.chat_postMessage(
@@ -135,8 +159,7 @@ def handle_app_mention(event, say):
 
         # Get AI response
         qa = get_qa_chain()
-        result = qa.invoke({"query": user_query})
-        answer = result["result"]
+        answer = qa(user_query)
 
         say(f"💡 {answer}")
 
@@ -188,14 +211,13 @@ if __name__ == "__main__":
         exit(1)
 
     # Check for vector index
-    if not os.path.exists("faiss_index"):
+    if not os.path.exists("vectors.json"):
         print("⚠️  Vector index not found. Auto-building from available documents...")
         try:
-            subprocess.run(["python", "ingest.py"], check=True)
-            subprocess.run(["python", "build_story.py"], check=True)
+            subprocess.run(["python", "enhanced_ingest.py"], check=True)
             print("✅ Vector index built successfully!")
         except subprocess.CalledProcessError:
-            print("❌ Failed to build vector index. Please run 'python ingest.py' and 'python build_story.py' manually")
+            print("❌ Failed to build vector index. Please run 'python enhanced_ingest.py' manually")
             exit(1)
         except FileNotFoundError:
             print("❌ No documents found in data/ folder. Please add some .md files and try again")

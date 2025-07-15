@@ -1,6 +1,9 @@
 langchain
-faiss-cpu
-pinecone-client
+langchain-community
+langchain-openai
+numpy
 openai
 tiktoken
 python-dotenv
+slack-bolt
+flask

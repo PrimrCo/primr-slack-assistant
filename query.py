@@ -1,34 +1,54 @@
 import os
 from dotenv import load_dotenv
-from langchain_community.chat_models import ChatOpenAI
-from langchain.chains import RetrievalQA
-from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
+from vector_search import SimpleVectorStore
 
 load_dotenv()
 
-# Load FAISS index (we trust our own generated files)
-# TODO: Security - Replace FAISS with pickle-free vector store (e.g., Chroma, Weaviate)
-# Current risk: Low (we control file creation), but should eliminate pickle entirely
-vs = FAISS.load_local(
-    "faiss_index",
-    OpenAIEmbeddings(model="text-embedding-ada-002"),
-    allow_dangerous_deserialization=True  # FIXME: Remove pickle dependency
-)
+# Load our custom vector store (no pickle)
+vs = SimpleVectorStore("vectors.json")
 
-retriever = vs.as_retriever(search_kwargs={"k": 5})
+# Create a simple QA system without RetrievalQA
+def answer_question(query: str) -> str:
+    # Get relevant documents
+    results = vs.similarity_search(query, k=5)
 
-qa = RetrievalQA.from_chain_type(
-    llm=ChatOpenAI(model="gpt-4", temperature=0),
-    chain_type="stuff",
-    retriever=retriever,
-)
+    if not results:
+        return "I don't have information to answer that question."
 
-while True:
-    query = input("🔍 Ask Primr: ")
-    if not query.strip():
-        break
+    # Format context from results
+    context = "\n\n".join([f"Document {i+1}:\n{text}" for i, (text, _, _) in enumerate(results)])
 
-    # Use invoke instead of deprecated run method
-    result = qa.invoke({"query": query})
-    print("\n💡", result["result"])
+    # Create prompt
+    prompt_template = """Use the following context to answer the question. If you cannot answer based on the context, say so.
+
+Context:
+{context}
+
+Question: {question}
+
+Answer:"""
+
+    prompt = PromptTemplate(
+        template=prompt_template,
+        input_variables=["context", "question"]
+    )
+
+    # Create LLM chain
+    llm = ChatOpenAI(model="gpt-4", temperature=0)
+    chain = LLMChain(llm=llm, prompt=prompt)
+
+    # Get answer
+    response = chain.run(context=context, question=query)
+    return response
+
+if __name__ == "__main__":
+    while True:
+        query = input("🔍 Ask Primr: ")
+        if not query.strip():
+            break
+
+        answer = answer_question(query)
+        print(f"\n🤖 Answer: {answer}\n")
