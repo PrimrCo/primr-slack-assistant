@@ -33,7 +33,7 @@ conda activate faiss-env
 conda install -c conda-forge faiss-cpu
 
 # Install ALL other packages via pip (one time only)
-pip install langchain langchain-community langchain-openai openai tiktoken pinecone
+pip install langchain langchain-community langchain-openai openai tiktoken pinecone slack-bolt
 ```
 
 ### 2. Environment Variables
@@ -42,12 +42,24 @@ Create a `.env` file in the project root:
 
 ```bash
 OPENAI_API_KEY=sk-proj-your-actual-key-here
+# Slack Bot Configuration (required for Slack integration)
+SLACK_BOT_TOKEN=xoxb-your-bot-token-here
+SLACK_APP_TOKEN=xapp-your-app-token-here
 # Optional: only if using Pinecone
 #PINECONE_API_KEY=your-pinecone-key
 #PINECONE_ENVIRONMENT=your-pinecone-env
 ```
 
-**Important**: Add `.env` to your `.gitignore` to keep API keys secure.
+**⚠️ CRITICAL SECURITY**:
+1. **FIRST** create `.gitignore` with `.env` in it
+2. **THEN** create your `.env` file
+3. **NEVER** commit API keys to version control
+4. If you accidentally expose keys, **immediately revoke and create new ones**
+
+```bash
+# Verify .env is ignored before committing
+git status  # .env should NOT appear in the list
+```
 
 ### 3. Get OpenAI API Key
 
@@ -138,7 +150,9 @@ primr-slack-assistant/
 ├── index_info.json         # Index metadata
 ├── ingest.py              # Document processing
 ├── build_story.py         # Vector index creation
-├── query.py               # Interactive Q&A
+├── query.py               # Interactive Q&A (terminal)
+├── slack_bot.py           # Slack bot server
+├── SLACK_SETUP.md         # Slack app configuration guide
 ├── .env                   # API keys (gitignored)
 └── README.md
 ```
@@ -157,10 +171,17 @@ primr-slack-assistant/
    - Saves metadata to `index_info.json`
 
 3. **Query Processing** (`query.py`):
+   - Terminal-based interactive Q&A for testing
    - Loads FAISS vector store
    - Converts user questions to embeddings
    - Finds top 5 most similar document chunks
    - Uses GPT-4 to generate contextual answers
+
+4. **Slack Bot** (`slack_bot.py`):
+   - Connects to Slack via Socket Mode
+   - Handles mentions, DMs, and slash commands
+   - Integrates with the QA chain for intelligent responses
+   - Provides real-time answers in your Slack workspace
 
 ## Vector Storage Options
 
@@ -242,14 +263,40 @@ ls data/
 - **Retrieval count**: Change `k=5` in `query.py` to return more/fewer context chunks
 - **Model selection**: Switch between `gpt-4` and `gpt-3.5-turbo` in `query.py` for cost vs quality
 
-## Slack Integration (Coming Soon)
+## Slack Integration
 
-To connect this to Slack:
+### Quick Start
+1. **Set up Slack App**: Follow the detailed guide in [`SLACK_SETUP.md`](SLACK_SETUP.md)
+2. **Add tokens to `.env`**:
+   ```bash
+   SLACK_BOT_TOKEN=xoxb-your-bot-token-here
+   SLACK_APP_TOKEN=xapp-your-app-token-here
+   ```
+3. **Start the bot**:
+   ```bash
+   conda activate faiss-env
+   python slack_bot.py
+   ```
 
-1. Create a Slack app at [api.slack.com](https://api.slack.com)
-2. Add bot tokens to `.env`
-3. Deploy Python service for Slack events
-4. Configure event subscriptions and slash commands
+### Bot Features
+- **Direct Messages**: Send DMs to the bot for private questions
+- **Channel Mentions**: @mention the bot in any channel it's added to
+- **Slash Commands**:
+  - `/ask-primr <question>` - Ask a question
+  - `/primr-status` - Check bot status
+- **Smart Responses**: Uses your document knowledge base for contextual answers
+
+### Usage Examples
+```
+# Direct message
+"What is our vacation policy?"
+
+# Channel mention
+"@Primr Assistant how do I submit expenses?"
+
+# Slash command
+"/ask-primr What are the remote work guidelines?"
+```
 
 ## Cost Estimation
 
