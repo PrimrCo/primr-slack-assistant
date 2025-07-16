@@ -1,6 +1,6 @@
 # Primr Slack Assistant
 
-An AI-powered Slack assistant that can answer questions about your company documents using Retrieval-Augmented Generation (RAG).
+A conversational AI assistant that integrates with Slack to answer questions about your company documentation using retrieval-augmented generation (RAG).
 
 ## Features
 
@@ -19,21 +19,21 @@ An AI-powered Slack assistant that can answer questions about your company docum
 
 ### 1. Install Dependencies
 
-Due to faiss-cpu build issues with pip, we use conda for vector search components:
-
 ```bash
-# Install miniconda (if not already installed)
-brew install miniconda
+# Navigate to project directory
+cd /Users/shaesmith/Documents/Primr/primr-slack-assistant
 
-# Create Python 3.9 environment for faiss compatibility
-conda create -n faiss-env python=3.9
-conda activate faiss-env
+# Create virtual environment
+python -m venv primr-bot-env
 
-# Install faiss-cpu via conda
-conda install -c conda-forge faiss-cpu
+# Activate virtual environment
+source primr-bot-env/bin/activate
 
-# Install ALL other packages via pip (one time only)
-pip install langchain langchain-community langchain-openai openai tiktoken pinecone slack-bolt
+# Upgrade pip
+pip install --upgrade pip
+
+# Install all dependencies
+pip install -r requirements.txt
 ```
 
 ### 2. Environment Variables
@@ -63,12 +63,10 @@ git status  # .env should NOT appear in the list
 
 ### 3. Get OpenAI API Key
 
-1. Go to [platform.openai.com](https://platform.openai.com)
-2. Create account and add billing (minimum $5)
-3. Generate API key at [API Keys](https://platform.openai.com/api-keys)
+1. Visit [platform.openai.com](https://platform.openai.com)
+2. Create account and add billing method
+3. Go to API Keys → Create new secret key
 4. Copy key to your `.env` file
-
-**Pricing**: ~$0.001-0.005 per interaction for typical usage.
 
 ## Usage
 
@@ -83,10 +81,10 @@ mkdir data
 
 ### Step 2: Process Documents
 
-Always activate your conda environment first:
+Always activate your virtual environment first:
 
 ```bash
-conda activate faiss-env
+source primr-bot-env/bin/activate
 ```
 
 Chunk your documents:
@@ -120,8 +118,8 @@ Ask questions about your documents!
 ## Complete Workflow Example
 
 ```bash
-# 1. Activate environment (packages already installed)
-conda activate faiss-env
+# 1. Activate environment
+source primr-bot-env/bin/activate
 
 # 2. Add sample document
 echo "# Company Policies\nOur vacation policy allows 3 weeks PTO..." > data/policies.md
@@ -139,109 +137,14 @@ python query.py
 # Ask: "What is the vacation policy?"
 ```
 
-## Architecture
-
-### File Structure
-```
-primr-slack-assistant/
-├── data/                    # Your .md documents
-├── faiss_index/            # Generated vector database
-├── chunks.json             # Processed document chunks (JSON format)
-├── index_info.json         # Index metadata
-├── ingest.py              # Document processing
-├── build_story.py         # Vector index creation
-├── query.py               # Interactive Q&A (terminal)
-├── slack_bot.py           # Slack bot server
-├── SLACK_SETUP.md         # Slack app configuration guide
-├── .env                   # API keys (gitignored)
-└── README.md
-```
-
-### How It Works
-
-1. **Document Processing** (`ingest.py`):
-   - Loads `.md` files from `data/` folder
-   - Splits into 1000-character chunks with 200-character overlap
-   - Saves chunks to `chunks.json` (secure JSON format)
-
-2. **Vector Index Creation** (`build_story.py`):
-   - Loads document chunks from JSON
-   - Creates embeddings using OpenAI's `text-embedding-ada-002`
-   - Stores vectors in FAISS index for fast similarity search
-   - Saves metadata to `index_info.json`
-
-3. **Query Processing** (`query.py`):
-   - Terminal-based interactive Q&A for testing
-   - Loads FAISS vector store
-   - Converts user questions to embeddings
-   - Finds top 5 most similar document chunks
-   - Uses GPT-4 to generate contextual answers
-
-4. **Slack Bot** (`slack_bot.py`):
-   - Connects to Slack via Socket Mode
-   - Handles mentions, DMs, and slash commands
-   - Integrates with the QA chain for intelligent responses
-   - Provides real-time answers in your Slack workspace
-
-## Vector Storage Options
-
-### FAISS (Local - Default)
-- ✅ Free and fast
-- ✅ No external dependencies
-- ✅ Good for development and small datasets
-- ❌ No cloud sync or scaling
-
-
 ## Troubleshooting
 
 ### Common Issues
 
-**OpenAI API v1.0+ compatibility errors**:
-```bash
-# If you get "APIRemovedInV1" errors:
-# Make sure you're using ChatOpenAI for chat models:
-from langchain_community.chat_models import ChatOpenAI
-
-# And use invoke() instead of run():
-result = qa.invoke({"query": query})
-print(result["result"])
-```
-
-**LangChain deprecation warnings**:
-```bash
-# If you see "Chain.run was deprecated" warnings:
-# Replace:
-qa.run(query)
-# With:
-result = qa.invoke({"query": query})
-print(result["result"])
-```
-
-**LangChain chat model warnings**:
-```bash
-# If you see warnings about "chat model" usage:
-# Update your imports from:
-from langchain_community.llms import OpenAI
-# To:
-from langchain_community.chat_models import ChatOpenAI
-
-# Then change:
-llm=OpenAI(model_name="gpt-4", temperature=0)
-# To:
-llm=ChatOpenAI(model_name="gpt-4", temperature=0)
-```
-
-**faiss-cpu build errors**:
-```bash
-# Solution: Use conda instead of pip
-conda activate faiss-env
-conda install -c conda-forge faiss-cpu
-```
-
 **Import errors**:
 ```bash
 # Make sure you're in the right environment
-conda activate faiss-env
+source primr-bot-env/bin/activate
 python your_script.py
 ```
 
@@ -257,12 +160,6 @@ ls data/
 # Should show your markdown files
 ```
 
-### Performance Tips
-
-- **Chunk size**: Adjust `chunk_size=1000` in `ingest.py` for your documents
-- **Retrieval count**: Change `k=5` in `query.py` to return more/fewer context chunks
-- **Model selection**: Switch between `gpt-4` and `gpt-3.5-turbo` in `query.py` for cost vs quality
-
 ## Slack Integration
 
 ### Quick Start
@@ -274,68 +171,17 @@ ls data/
    ```
 3. **Start the bot**:
    ```bash
-   conda activate faiss-env
+   source primr-bot-env/bin/activate
    python slack_bot.py
    ```
 
-### Bot Features
-- **Direct Messages**: Send DMs to the bot for private questions
-- **Channel Mentions**: @mention the bot in any channel it's added to
-- **Slash Commands**:
-  - `/ask-primr <question>` - Ask a question
-  - `/primr-status` - Check bot status
-- **Smart Responses**: Uses your document knowledge base for contextual answers
+### Daily Workflow
+```bash
+# Every time you work on the project:
+cd /Users/shaesmith/Documents/Primr/primr-slack-assistant
+source primr-bot-env/bin/activate
+python slack_bot.py
 
-### Usage Examples
-```
-# Direct message
-"What is our vacation policy?"
-
-# Channel mention
-"@Primr Assistant how do I submit expenses?"
-
-# Slash command
-"/ask-primr What are the remote work guidelines?"
-```
-
-## Cost Estimation
-
-**OpenAI Usage**:
-- Document embedding: ~$0.10 per 100 documents
-- Query responses: ~$0.001-0.005 per question
-- Monthly usage (small team): $10-50
-
-**Infrastructure**:
-- FAISS: Free (local storage)
-- Pinecone: $70/month (if using cloud option)
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch
-3. Make sure to test with `conda activate faiss-env`
-4. Submit a pull request
-
-## Known Issues / Technical Debt
-
-### Security: Pickle Dependency in FAISS
-- **Issue**: FAISS vector store uses pickle for metadata serialization
-- **Current mitigation**: We only load files we created ourselves
-- **Risk level**: Low (controlled environment)
-- **Future fix**: Migrate to pickle-free vector store (Chroma, Weaviate, or Pinecone)
-
-### Alternative Vector Stores to Consider
-- **Chroma**: Local SQLite-based, no pickle
-- **Weaviate**: Open source, REST API
-- **Pinecone**: Cloud-hosted, production-ready
-
-```
-# Future: query.py without pickle
-from langchain_community.vectorstores import Chroma
-
-vs = Chroma(
-    persist_directory="./chroma_db",
-    embedding_function=OpenAIEmbeddings(model="text-embedding-ada-002")
-)
-# No allow_dangerous_deserialization needed!
+# To deactivate when done:
+deactivate
 ```
