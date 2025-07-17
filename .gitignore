@@ -8,6 +8,7 @@ env/
 .env
 .env.local
 .env.production
+.env.backup
 
 # Generated data files
 chunks.json
@@ -53,4 +54,4 @@ wheels/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db
+Thumbs.dbvector_store.json

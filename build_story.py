@@ -2,7 +2,6 @@ import os
 import json
 from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import FAISS
 from langchain.schema import Document
 
 load_dotenv()
@@ -23,17 +22,28 @@ for chunk_data in chunks_data:
 # 3. Create embeddings
 embedder = OpenAIEmbeddings(model="text-embedding-ada-002")
 
-# 4. Create FAISS index
-vector_store = FAISS.from_documents(chunks, embedder)
+# 4. Generate embeddings for each chunk and store as JSON
+vector_data = []
+for i, chunk in enumerate(chunks):
+    embedding = embedder.embed_query(chunk.page_content)
+    vector_data.append({
+        "id": i,
+        "content": chunk.page_content,
+        "metadata": chunk.metadata,
+        "embedding": embedding
+    })
 
-# 5. Save FAISS index securely (without pickle for documents)
-vector_store.save_local("faiss_index")
-print("💾 FAISS index saved to ./faiss_index/")
+# 5. Save vector data as JSON
+with open("vector_store.json", "w", encoding="utf-8") as f:
+    json.dump(vector_data, f, indent=2, ensure_ascii=False)
 
-# Optional: Save just the embeddings and metadata separately as JSON backup
+print("💾 Vector store saved to vector_store.json")
+
+# Save index metadata
 index_info = {
     "embedding_model": "text-embedding-ada-002",
     "chunk_count": len(chunks),
+    "vector_dimension": len(vector_data[0]["embedding"]) if vector_data else 0,
     "index_created": True
 }
 
