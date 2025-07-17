@@ -55,3 +55,4 @@ wheels/
 .Trashes
 ehthumbs.db
 Thumbs.dbvector_store.json
+vector_store.json
